@@ -5,15 +5,21 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(ethercat_msgs REQUIRED)
 
-# EtherLab
-set(ETHERLAB_DIR /usr/local/etherlab)
+# EtherLab. Keep the system-wide installation as the default while allowing
+# CI and development machines to use an unprivileged staging prefix.
+set(ETHERLAB_DIR "/usr/local/etherlab" CACHE PATH "IgH EtherCAT installation prefix")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-find_library(ETHERCAT_LIB ethercat HINTS ${ETHERLAB_DIR}/lib)
+find_path(ETHERCAT_INCLUDE_DIR ecrt.h
+  HINTS ${ETHERLAB_DIR}/include
+  REQUIRED)
+find_library(ETHERCAT_LIB ethercat
+  HINTS ${ETHERLAB_DIR}/lib
+  REQUIRED)
 
 ament_export_include_directories(
   include
-  ${ETHERLAB_DIR}/include
+  ${ETHERCAT_INCLUDE_DIR}
 )
 
 add_executable(
@@ -23,7 +29,7 @@ target_include_directories(
   ethercat_sdo_srv_server
   PRIVATE
   include
-  ${ETHERLAB_DIR}/include
+  ${ETHERCAT_INCLUDE_DIR}
 )
 target_link_libraries(ethercat_sdo_srv_server ${ETHERCAT_LIB})
 ament_target_dependencies(ethercat_sdo_srv_server rclcpp ethercat_msgs)
@@ -43,7 +49,7 @@ ament_export_include_directories(
 )
 ament_export_libraries(
   ethercat_sdo_srv_server
-  ${ETHERCAT_LIBRARY}
+  ${ETHERCAT_LIB}
 )
 ament_export_dependencies(
   rclcpp
